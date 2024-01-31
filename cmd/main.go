@@ -23,10 +23,11 @@ type Triggers struct {
 }
 
 type Generator struct {
-	Tags              bool   `toml:"tags"`
-	Changelog         bool   `toml:"changelog"`
-	AutoCommit        bool   `toml:"autocommit"`
-	AutoCommitMessage string `toml:"autocommit_message"`
+	Tags           bool   `toml:"tags"`
+	Changelog      bool   `toml:"changelog"`
+	AutoCommit     bool   `toml:"autocommit"`
+	CommitTemplate string `toml:"commit_template"`
+	TagsPrefix     string `toml:"tags_prefix"`
 }
 
 type config struct {
@@ -42,10 +43,11 @@ func defaultConfig() *config {
 			Patch: []string{"fix", "perf", "ref", "docs", "style", "chore", "tests"},
 		},
 		Generator: &Generator{
-			Tags:              true,
-			Changelog:         true,
-			AutoCommit:        false,
-			AutoCommitMessage: "chore: release {{.Version}}",
+			Tags:           false,
+			Changelog:      true,
+			AutoCommit:     false,
+			CommitTemplate: "chore: release {{.Version}}",
+			TagsPrefix:     "v",
 		},
 	}
 }
@@ -63,11 +65,10 @@ type vsyncFlags struct {
 }
 
 var (
-	ErrGitRepoNotFound       = errors.New("git repository not found")
-	ErrGitNotFound           = errors.New("git-cli not found")
-	ErrChangeLogTagsOptions  = errors.New("changelog option can't be used without tags option")
-	ErrAutoCommitTagsOptions = errors.New("autocommit option can't be used without tags option")
-	ErrorAutoCommitMessage   = errors.New("autocommit message can't be empty")
+	ErrGitRepoNotFound   = errors.New("git repository not found")
+	ErrGitNotFound       = errors.New("git-cli not found")
+	ErrAutoCommitMessage = errors.New("autocommit message can't be empty")
+	ErrNothingToCommit   = errors.New("nothing to autocommit, generate tags or changelog")
 )
 
 func verifyGit(path string) error {
@@ -118,20 +119,16 @@ VSync is inspired to automate https://semver.org/ and https://keepachangelog.com
 				return err
 			}
 
-			if !cfg.Generator.Tags && cfg.Generator.Changelog {
-				return ErrChangeLogTagsOptions
-			}
-
-			if !cfg.Generator.Tags && cfg.Generator.AutoCommit {
-				return ErrAutoCommitTagsOptions
-			}
-
-			if cfg.Generator.AutoCommit && cfg.Generator.AutoCommitMessage == "" {
-				return ErrorAutoCommitMessage
+			if cfg.Generator.AutoCommit && cfg.Generator.CommitTemplate == "" {
+				return ErrAutoCommitMessage
 			}
 
 			if !cfg.Generator.Changelog {
 				return nil
+			}
+
+			if cfg.Generator.AutoCommit && !(cfg.Generator.Tags || cfg.Generator.Changelog) {
+				return ErrNothingToCommit
 			}
 
 			return verifyChangelog(flags.changelogPath)
@@ -139,23 +136,29 @@ VSync is inspired to automate https://semver.org/ and https://keepachangelog.com
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if cfg.Generator.Tags {
 				actions = append(actions, func() error {
-					return newTag(flags.gitPath, cfg.Triggers)
+					return newTag(flags.gitPath, cfg.Generator.TagsPrefix, cfg.Triggers)
 				})
 			}
 
-			if cfg.Generator.Tags && cfg.Generator.Changelog {
+			if cfg.Generator.Changelog {
 				actions = append(actions, func() error {
 					return updateChangelog(flags.gitPath, flags.changelogPath)
 				})
 			}
 
-			if cfg.Generator.Tags && cfg.Generator.AutoCommit {
+			if cfg.Generator.AutoCommit {
 				actions = append(actions, func() error {
-					return commit(flags.gitPath, cfg.Generator.AutoCommitMessage)
+					return doCommit(flags.gitPath, cfg.Generator.CommitTemplate)
 				})
 			}
 
-			return run(cfg, flags.gitPath, actions...)
+			for _, action := range actions {
+				if err := action(); err != nil {
+					return err
+				}
+			}
+
+			return nil
 		},
 		SilenceUsage: true,
 	}
