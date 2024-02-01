@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -13,7 +14,7 @@ type action struct {
 }
 
 func writeToTopOfFile(filePath, content string) error {
-	f, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0644)
+	f, err := os.OpenFile(filepath.Clean(filePath), os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %w", err)
 	}

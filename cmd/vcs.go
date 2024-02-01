@@ -36,12 +36,7 @@ func (g *git) unreleasedChanges() []string {
 		return nil
 	}
 
-	var changes []string
-	for _, line := range strings.Split(string(out), "\n") {
-		changes = append(changes, line)
-	}
-
-	return changes
+	return strings.Split(string(out), "\n")
 }
 
 func (g *git) uncommittedChanges() []string {
@@ -53,8 +48,11 @@ func (g *git) uncommittedChanges() []string {
 		return nil
 	}
 
-	var changes []string
-	for _, line := range strings.Split(string(out), "\n") {
+	var (
+		split   = strings.Split(string(out), "\n")
+		changes = make([]string, 0, len(split))
+	)
+	for _, line := range split {
 		parts := strings.Fields(line)
 		if len(parts) < 2 {
 			continue

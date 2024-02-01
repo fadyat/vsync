@@ -103,7 +103,7 @@ VSync is inspired to automate https://semver.org/ and https://keepachangelog.com
 			overwriteConfig(cfg, flags.configPath)
 			overwriteGit(gitCli, flags.gitPath)
 
-			if err = gitCli.verify(); err != nil {
+			if err := gitCli.verify(); err != nil {
 				return err
 			}
 
@@ -171,10 +171,18 @@ VSync is inspired to automate https://semver.org/ and https://keepachangelog.com
 	vsync.PersistentFlags().StringVarP(&flags.gitPath, "git", "", ".git", "git repository path")
 
 	vsync.PersistentFlags().BoolVarP(&cfg.Generator.Tags, "tags", "t", cfg.Generator.Tags, "generate tags based on commit messages")
-	vsync.PersistentFlags().BoolVarP(&cfg.Generator.Changelog, "changelog", "c", cfg.Generator.Changelog, "generate changelog based on commit messages")
-	vsync.PersistentFlags().BoolVarP(&cfg.Generator.AutoCommit, "autocommit", "a", cfg.Generator.AutoCommit, "autocommit changes")
-	vsync.PersistentFlags().StringVarP(&cfg.Generator.TagsPrefix, "tags-prefix", "p", cfg.Generator.TagsPrefix, "tags prefix")
-	vsync.PersistentFlags().StringVarP(&cfg.Generator.AutoCommitMessage, "autocommit-message", "m", cfg.Generator.AutoCommitMessage, "autocommit message")
+	vsync.PersistentFlags().BoolVarP(
+		&cfg.Generator.Changelog, "changelog", "c", cfg.Generator.Changelog, "generate changelog based on commit messages",
+	)
+	vsync.PersistentFlags().BoolVarP(
+		&cfg.Generator.AutoCommit, "autocommit", "a", cfg.Generator.AutoCommit, "autocommit changes",
+	)
+	vsync.PersistentFlags().StringVarP(
+		&cfg.Generator.TagsPrefix, "tags-prefix", "p", cfg.Generator.TagsPrefix, "tags prefix",
+	)
+	vsync.PersistentFlags().StringVarP(
+		&cfg.Generator.AutoCommitMessage, "autocommit-message", "m", cfg.Generator.AutoCommitMessage, "autocommit message",
+	)
 
 	vsync.AddCommand(&cobra.Command{
 		Use:   "version",
