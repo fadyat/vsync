@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/spf13/cobra"
@@ -75,18 +74,9 @@ var (
 	ErrChangeLogNotUpdated = errors.New("changelog not updated")
 	ErrMultipleChanges     = errors.New("multiple changes, please commit manually")
 	ErrUncommittedChanges  = errors.New("uncommitted changes, commit or stash them")
-
-	ErrNothingToBump = errors.New("nothing to bump based on commits")
-	ErrInvalidSemVer = errors.New("invalid semVer format of latest tag")
+	ErrNothingToBump       = errors.New("nothing to bump based on commits")
+	ErrInvalidSemVer       = errors.New("invalid semVer format of latest tag")
 )
-
-func verifyChangelog(path string) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return fmt.Errorf("changelog file not found: %w", err)
-	}
-
-	return nil
-}
 
 func main() {
 	log.SetFlags(0)
@@ -121,31 +111,16 @@ VSync is inspired to automate https://semver.org/ and https://keepachangelog.com
 				return ErrAutoCommitMessage
 			}
 
-			if !cfg.Generator.Changelog {
-				return nil
-			}
-
 			if cfg.Generator.AutoCommit && !(cfg.Generator.Tags || cfg.Generator.Changelog) {
 				return ErrNothingToCommit
 			}
 
-			return verifyChangelog(flags.changelogPath)
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			gw := &gitWrapper{
 				api:             gitCli,
 				changeLogWriter: markdownChangelog,
-			}
-
-			if cfg.Generator.Tags {
-				actions = append(actions, &action{
-					name: "new tag",
-					run: func() error {
-						return gw.newTag(
-							cfg.Generator.TagsPrefix, cfg.Triggers,
-						)
-					},
-				})
 			}
 
 			if cfg.Generator.Changelog {
@@ -168,10 +143,21 @@ VSync is inspired to automate https://semver.org/ and https://keepachangelog.com
 				})
 			}
 
+			if cfg.Generator.Tags {
+				actions = append(actions, &action{
+					name: "new tag",
+					run: func() error {
+						return gw.newTag(
+							cfg.Generator.TagsPrefix, cfg.Triggers,
+						)
+					},
+				})
+			}
+
 			for _, a := range actions {
 				log.Printf("Running %q action", a.name)
 				if err := a.run(); err != nil {
-					return err
+					log.Printf("Failed to run %q action: %v", a.name, err)
 				}
 			}
 

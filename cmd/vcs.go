@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -22,7 +23,7 @@ type git struct {
 }
 
 func (g *git) unreleasedChanges() []string {
-	cmd := exec.Command("git", "log", "--pretty=format:%s")
+	cmd := exec.Command("git", "log", "--pretty=format:%s", g.latestTag()+"..HEAD")
 	cmd.Dir = g.path
 
 	out, err := cmd.Output()
@@ -105,7 +106,12 @@ func (g *git) latestTag() string {
 
 func (g *git) commit(message string) error {
 	cmd := exec.Command("git", "commit", "-am", message)
-	cmd.Dir = g.path
+	cmd.Dir = filepath.Join(g.path, "..")
 
-	return cmd.Run()
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("git commit failed: %s", string(out))
+	}
+
+	return nil
 }

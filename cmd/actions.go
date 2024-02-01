@@ -122,6 +122,11 @@ func (g *gitWrapper) matchNextVersion(version string, priority int) (string, err
 }
 
 func (g *gitWrapper) updateChangelog(tagPrefix, changelogPath string, triggers *Triggers) error {
+	uncommittedChanges := g.api.uncommittedChanges()
+	if len(uncommittedChanges) > 0 {
+		return ErrUncommittedChanges
+	}
+
 	changes := g.api.unreleasedChanges()
 	latestTag := strings.TrimPrefix(g.api.latestTag(), tagPrefix)
 	tag, err := g.bumpVersion(latestTag, changes, triggers)
