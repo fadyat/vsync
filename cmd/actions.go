@@ -109,7 +109,7 @@ func (g *gitWrapper) bumpVersion(
 			priority = min(priority, 1)
 		}
 
-		if havePrefix(commit, triggers.Patch) && priority < 2 {
+		if havePrefix(commit, triggers.Patch) {
 			priority = min(priority, 2)
 		}
 	}
