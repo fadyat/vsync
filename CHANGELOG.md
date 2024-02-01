@@ -1,3 +1,7 @@
+## [v0.1.1]
+
+- chore: remove patch version of golang
+
 ## [v0.1.0]
 
 - feat: more git shit
