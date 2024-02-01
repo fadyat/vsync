@@ -52,7 +52,7 @@ func writeToTopOfFile(filePath, content string) error {
 
 func markdownChangelog(tag, changelogPath string, changes []string) (err error) {
 	var content strings.Builder
-	content.WriteString(fmt.Sprintf("## [%s]\n\n", tag))
+	content.WriteString(fmt.Sprintf("### [%s]\n\n", tag))
 
 	for _, change := range changes {
 		content.WriteString(fmt.Sprintf("- %s\n", change))

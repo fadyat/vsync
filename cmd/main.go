@@ -143,6 +143,8 @@ VSync is inspired to automate https://semver.org/ and https://keepachangelog.com
 				})
 			}
 
+			// by following order chore commit of updating changelog will never
+			// meet in the CHANGELOG.md file, cleaner history
 			if cfg.Generator.Tags {
 				actions = append(actions, &action{
 					name: "new tag",
