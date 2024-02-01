@@ -14,7 +14,7 @@ type vcs interface {
 	newTag(tag string) error
 	latestTag() string
 	unreleasedChanges() []string
-	commit(message string) error
+	acommit(message string) error
 	uncommittedChanges() []string
 }
 
@@ -23,12 +23,17 @@ type git struct {
 }
 
 func (g *git) unreleasedChanges() []string {
-	cmd := exec.Command("git", "log", "--pretty=format:%s", g.latestTag()+"..HEAD")
+	latestTag, part := g.latestTag(), "HEAD"
+	if latestTag != "" {
+		part = latestTag + "..HEAD"
+	}
+
+	cmd := exec.Command("git", "log", "--pretty=format:%s", part)
 	cmd.Dir = g.path
 
 	out, err := cmd.Output()
 	if err != nil {
-		panic(err)
+		return nil
 	}
 
 	var changes []string
@@ -45,7 +50,7 @@ func (g *git) uncommittedChanges() []string {
 
 	out, err := cmd.Output()
 	if err != nil {
-		panic(err)
+		return nil
 	}
 
 	var changes []string
@@ -77,9 +82,9 @@ func (g *git) version() (string, error) {
 	cmd := exec.Command("git", "--version")
 	cmd.Dir = g.path
 
-	out, err := cmd.Output()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("git --version failed: %s", string(out))
 	}
 
 	return string(out), nil
@@ -89,7 +94,12 @@ func (g *git) newTag(tag string) error {
 	cmd := exec.Command("git", "tag", tag)
 	cmd.Dir = g.path
 
-	return cmd.Run()
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("git tag failed: %s", string(out))
+	}
+
+	return nil
 }
 
 func (g *git) latestTag() string {
@@ -104,7 +114,23 @@ func (g *git) latestTag() string {
 	return strings.TrimSpace(string(out))
 }
 
-func (g *git) commit(message string) error {
+func (g *git) add(path string) error {
+	cmd := exec.Command("git", "add", path)
+	cmd.Dir = filepath.Join(g.path, "..")
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("git add failed: %s", string(out))
+	}
+
+	return nil
+}
+
+func (g *git) acommit(message string) error {
+	if err := g.add("."); err != nil {
+		return err
+	}
+
 	cmd := exec.Command("git", "commit", "-am", message)
 	cmd.Dir = filepath.Join(g.path, "..")
 

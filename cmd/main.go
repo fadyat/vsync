@@ -45,7 +45,7 @@ func defaultConfig() *config {
 			Changelog:         true,
 			AutoCommit:        false,
 			TagsPrefix:        "v",
-			AutoCommitMessage: "chore[VSync]: changelog updated",
+			AutoCommitMessage: "chore: changelog updated",
 		},
 	}
 }

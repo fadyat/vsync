@@ -12,31 +12,52 @@ type action struct {
 	run  func() error
 }
 
-func markdownChangelog(tag, changelogPath string, changes []string) (err error) {
-	f, err := os.OpenFile(changelogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func writeToTopOfFile(filePath, content string) error {
+	f, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
-		return fmt.Errorf("failed to open changelog file: %w", err)
+		return fmt.Errorf("failed to open file: %w", err)
 	}
 
 	defer func() {
 		if err = f.Close(); err != nil {
-			err = fmt.Errorf("failed to close changelog file: %w", err)
+			err = fmt.Errorf("failed to close file: %w", err)
 		}
 	}()
 
-	tagHeader := fmt.Sprintf("## %s\n\n", tag)
-	if _, err = f.WriteString(tagHeader); err != nil {
-		return fmt.Errorf("failed to write to changelog file: %w", err)
+	stat, err := f.Stat()
+	if err != nil {
+		return fmt.Errorf("failed to get file info: %w", err)
 	}
 
-	for _, change := range changes {
-		changePointer := fmt.Sprintf("- %s\n", change)
-		if _, err = f.WriteString(changePointer); err != nil {
-			return fmt.Errorf("failed to write to changelog file: %w", err)
-		}
+	fileSize := stat.Size()
+	buf := make([]byte, fileSize)
+	_, err = f.Read(buf)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+
+	_, err = f.WriteAt([]byte(content+"\n"), 0)
+	if err != nil {
+		return fmt.Errorf("failed to write to file: %w", err)
+	}
+
+	_, err = f.WriteAt(buf, int64(len(content)+1))
+	if err != nil {
+		return fmt.Errorf("failed to write to file: %w", err)
 	}
 
 	return nil
+}
+
+func markdownChangelog(tag, changelogPath string, changes []string) (err error) {
+	var content strings.Builder
+	content.WriteString(fmt.Sprintf("## [%s]\n\n", tag))
+
+	for _, change := range changes {
+		content.WriteString(fmt.Sprintf("- %s\n", change))
+	}
+
+	return writeToTopOfFile(changelogPath, content.String())
 }
 
 type gitWrapper struct {
@@ -153,5 +174,5 @@ func (g *gitWrapper) commit(autocommitMessage, changelogPath string) error {
 		return ErrMultipleChanges
 	}
 
-	return g.api.commit(autocommitMessage)
+	return g.api.acommit(autocommitMessage)
 }
