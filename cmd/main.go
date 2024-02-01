@@ -94,7 +94,7 @@ func main() {
 	var (
 		cfg     = defaultConfig()
 		flags   = &vsyncFlags{}
-		actions []func() error
+		actions []*action
 		gitCli  = &git{}
 	)
 
@@ -138,31 +138,39 @@ VSync is inspired to automate https://semver.org/ and https://keepachangelog.com
 			}
 
 			if cfg.Generator.Tags {
-				actions = append(actions, func() error {
-					return gw.newTag(
-						cfg.Generator.TagsPrefix, cfg.Triggers,
-					)
+				actions = append(actions, &action{
+					name: "new tag",
+					run: func() error {
+						return gw.newTag(
+							cfg.Generator.TagsPrefix, cfg.Triggers,
+						)
+					},
 				})
 			}
 
 			if cfg.Generator.Changelog {
-				actions = append(actions, func() error {
-					return gw.updateChangelog(
-						cfg.Generator.TagsPrefix, flags.changelogPath, cfg.Triggers,
-					)
+				actions = append(actions, &action{
+					name: "update changelog",
+					run: func() error {
+						return gw.updateChangelog(
+							cfg.Generator.TagsPrefix, flags.changelogPath, cfg.Triggers,
+						)
+					},
 				})
 			}
 
 			if cfg.Generator.AutoCommit {
-				actions = append(actions, func() error {
-					return gw.commit(
-						cfg.Generator.AutoCommitMessage, flags.changelogPath,
-					)
+				actions = append(actions, &action{
+					name: "autocommit",
+					run: func() error {
+						return gw.commit(cfg.Generator.AutoCommitMessage, flags.changelogPath)
+					},
 				})
 			}
 
-			for _, action := range actions {
-				if err := action(); err != nil {
+			for _, a := range actions {
+				log.Printf("Running %q action", a.name)
+				if err := a.run(); err != nil {
 					return err
 				}
 			}

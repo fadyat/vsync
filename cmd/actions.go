@@ -7,6 +7,11 @@ import (
 	"strings"
 )
 
+type action struct {
+	name string
+	run  func() error
+}
+
 func markdownChangelog(tag, changelogPath string, changes []string) (err error) {
 	f, err := os.OpenFile(changelogPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -44,9 +49,6 @@ func (g *gitWrapper) newTag(tagPrefix string, triggers *Triggers) error {
 	if len(uncommittedChanges) > 0 {
 		return ErrUncommittedChanges
 	}
-
-	fmt.Println(uncommittedChanges)
-	return fmt.Errorf("aboba")
 
 	changes := g.api.unreleasedChanges()
 	latestTag := strings.TrimPrefix(g.api.latestTag(), tagPrefix)
