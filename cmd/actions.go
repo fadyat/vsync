@@ -140,6 +140,11 @@ func (g *gitWrapper) matchNextVersion(version string, priority int) (string, err
 	}
 
 	parts[priority] = strconv.Itoa(num + 1)
+
+	for i := priority + 1; i < 3; i++ {
+		parts[i] = "0"
+	}
+
 	return strings.Join(parts, "."), nil
 }
 
