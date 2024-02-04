@@ -1,7 +1,3 @@
-### [v0.1.2]
-
-- chore: remove some errors, provide readme
-
 ### [v0.1.1]
 
 - chore: remove patch version of golang
